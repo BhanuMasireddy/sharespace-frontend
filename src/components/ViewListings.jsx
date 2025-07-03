@@ -5,17 +5,29 @@ import { Link } from 'react-router-dom';
 
 function ViewListings() {
   const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchListings = async (retry = false) => {
+    try {
+      const res = await axios.get('https://sharespace-backend-vyd6.onrender.com/api/listings/get');
+      if (res.data && res.data.length > 0) {
+        setListings(res.data);
+        setLoading(false);
+      } else {
+        if (!retry) {
+          // Try once more after a 3-second delay if no data
+          setTimeout(() => fetchListings(true), 3000);
+        } else {
+          setLoading(false);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch listings:', err);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchListings = async () => {
-      try {
-        const res = await axios.get('https://sharespace-backend-vyd6.onrender.com/api/listings/get');
-        setListings(res.data);
-      } catch (err) {
-        console.error('Failed to fetch listings:', err);
-      }
-    };
-
     fetchListings();
   }, []);
 
@@ -26,7 +38,9 @@ function ViewListings() {
           Welcome to <span className="italic text-yellow-100">ShareSpace</span> Marketplace
         </h2>
 
-        {listings.length === 0 ? (
+        {loading ? (
+          <p className="text-center text-white text-lg animate-pulse">Fetching listings...</p>
+        ) : listings.length === 0 ? (
           <p className="text-center text-white text-lg">No listings available yet.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
